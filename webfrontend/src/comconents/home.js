@@ -1,5 +1,6 @@
 import img_01 from '../img_01.jpeg'
 import * as React from 'react';
+
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
@@ -9,7 +10,7 @@ import Typography from '@mui/material/Typography';
 
 
 
-export default function MediaCard() {
+export default function Home() {
   return (
     <Card sx={{ mx: "auto", my: 10, maxWidth: 345 }}>
       <CardMedia

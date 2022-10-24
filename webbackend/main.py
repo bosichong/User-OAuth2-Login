@@ -11,6 +11,7 @@ from typing import List  # 用于定义对象数组
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # 解决跨域
 from sqlalchemy.orm import Session
 
 from v1 import home
@@ -39,6 +40,24 @@ app = FastAPI(
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
+)
+
+# 配置允许域名
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3003",
+
+]
+# 配置允许域名列表、允许方法、请求头、cookie等
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 删除表，当更新表的结构时可以使用，但是会删除所有数据。慎用！！！！

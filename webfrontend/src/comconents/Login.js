@@ -5,7 +5,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import axios from 'axios';
 
-
+const baseURL = 'http://localhost:8000'
 
 
 function Login() {
@@ -15,6 +15,11 @@ function Login() {
     function handleSubmit(event){
         event.preventDefault()// 阻止表单提交
         console.log("提交表单!")
+        axios.get(baseURL+'/test/').then(function (response){
+            console.log(response)
+            // todo 继续登陆接口测试
+        })
+
     }
     return (
         <form onSubmit={handleSubmit}>

@@ -1,10 +1,17 @@
-import MediaCard from './comconents/home'
+
 import './App.css';
+import routes from './routes'
+import { useRoutes } from "react-router-dom";
+
 
 
 function App() {
+  const element = useRoutes(routes)
   return (
-    <MediaCard />
+    <div>
+      {element}
+    </div>
+    
   );
 }
 
