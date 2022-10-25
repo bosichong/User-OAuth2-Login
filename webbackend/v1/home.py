@@ -96,6 +96,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
+# 判断用户是否处于锁定状态
+def get_current_active_user(current_user: User = Depends(get_current_user)):
+    if current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+
 def verify_token(token: str = Depends(oauth2_scheme)):
     """
     验证token
@@ -113,11 +120,14 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         return False
 
 
-# 判断用户是否处于锁定状态
-def get_current_active_user(current_user: User = Depends(get_current_user)):
-    if current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+@router.post("/verify_token")
+def api_verify_token(token: str, ):
+    """
+    验证token的接口
+    :param token:
+    :return:
+    """
+    return {"res": verify_token(token)}
 
 
 @router.post("/token", response_model=Token)
