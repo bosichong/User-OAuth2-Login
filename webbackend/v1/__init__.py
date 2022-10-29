@@ -7,8 +7,3 @@
 @time     :2022/10/19
 
 """
-from webbackend.v1.home import verify_password
-
-__all__={
-    "verify_password"
-}

@@ -7,22 +7,21 @@
 @time     :2022/10/19
 
 """
+
 from datetime import datetime, timedelta
 from typing import Union, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from webbackend import crud, schemas
 from webbackend.database import get_db
+from webbackend.rbac_decorator import verify_token_wrapper
 from webbackend.schemas import Token, TokenData
 from webbackend.schemas import User
-from webbackend.utils import verify_password, AppTokenConfig
-
-# 创建一个token的配置项。
-app_token_config = AppTokenConfig()
+from webbackend.utils import verify_password, APP_TOKEN_CONFIG, oauth2_scheme
 
 router = APIRouter(
     prefix="/v1",
@@ -30,19 +29,20 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},  # 请求异常返回数据
 )
 
-# 执行生成token的地址
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/token")
 
-
-# 获取用户信息
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    """
+    根据id返回丹铅用户
+    :param user_id:
+    :param db:
+    :return:
+    """
     db_user = crud.get_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
 
-# 认证用户
 def authenticate_user(db: Session, username: str, password: str, ):
     """
     认证用户
@@ -60,7 +60,6 @@ def authenticate_user(db: Session, username: str, password: str, ):
     return user
 
 
-# 生成token
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
     """
     生成token
@@ -75,7 +74,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     # 生成带有时间限制的token
-    encoded_jwt = jwt.encode(to_encode, app_token_config.SECRET_KEY, algorithm=app_token_config.ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, APP_TOKEN_CONFIG.SECRET_KEY, algorithm=APP_TOKEN_CONFIG.ALGORITHM)
     return encoded_jwt
 
 
@@ -110,7 +109,7 @@ def verify_token(token: str = Depends(oauth2_scheme)):
     :return:
     """
     try:  # 从token中解码出用户名，
-        payload = jwt.decode(token, app_token_config.SECRET_KEY, algorithms=[app_token_config.ALGORITHM])
+        payload = jwt.decode(token, APP_TOKEN_CONFIG.SECRET_KEY, algorithms=[APP_TOKEN_CONFIG.ALGORITHM])
         username: str = payload.get("sub")  # 从 token中获取用户名
         if username is None:
             return False
@@ -140,7 +139,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=app_token_config.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=APP_TOKEN_CONFIG.ACCESS_TOKEN_EXPIRE_MINUTES)
     # 生成token
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
@@ -149,25 +148,19 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
 
 @router.get("/users/me", response_model=User)
-def read_users_me(current_user: User = Depends(get_current_active_user)):
+@verify_token_wrapper()
+def read_users_me(current_user: User = Depends(get_current_active_user),token: str = Depends(oauth2_scheme)):
     return current_user
 
 
 @router.get("/items/")
-async def read_items(token: str = Depends(oauth2_scheme)):
+@verify_token_wrapper()
+def read_items(token: str = Depends(oauth2_scheme)):
     return {"token": token}
 
 
 @router.get("/users/", response_model=List[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    username = verify_token(token)
-    if username:
-        users = crud.get_users(db, skip=skip, limit=limit)
-    else:
-        raise credentials_exception
+@verify_token_wrapper()
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),token: str = Depends(oauth2_scheme)):
+    users = crud.get_users(db, skip=skip, limit=limit)
     return users
