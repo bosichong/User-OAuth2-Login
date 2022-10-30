@@ -136,7 +136,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="用户名或密码错误!",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=APP_TOKEN_CONFIG.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -150,17 +150,27 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 @router.get("/users/me", response_model=User)
 @verify_token_wrapper()
 def read_users_me(current_user: User = Depends(get_current_active_user),token: str = Depends(oauth2_scheme)):
+    """
+    返回当前用户的资料
+    """
+    
     return current_user
 
 
 @router.get("/items/")
 @verify_token_wrapper()
 def read_items(token: str = Depends(oauth2_scheme)):
+    """
+    获取当前用户的token
+    """
     return {"token": token}
 
 
 @router.get("/users/", response_model=List[schemas.User])
 @verify_token_wrapper()
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),token: str = Depends(oauth2_scheme)):
+    """
+    获取用用呢列表
+    """
     users = crud.get_users(db, skip=skip, limit=limit)
     return users
